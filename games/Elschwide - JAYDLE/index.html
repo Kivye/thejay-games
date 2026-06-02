@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0e12">
+<title>JAYDLE - The Crypto Word Game</title>
+<style>
+:root{
+  --bg:#0a0e12;
+  --bg-2:#131820;
+  --bg-3:#1a2230;
+  --emerald:#10d9a0;
+  --emerald-2:#0bb986;
+  --gold:#f4b400;
+  --purple:#9d5cff;
+  --red:#ff5470;
+  --ink:#e8eef5;
+  --ink-2:#a8b3c0;
+  --dim:#7a8696;
+  --hairline:rgba(16,217,160,0.15);
+  --tile:#131820;
+  --tile-border:#2a3242;
+  --tile-empty:rgba(255,255,255,0.04);
+  --green:#10d9a0;
+  --yellow:#f4b400;
+  --gray:#3a4452;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{
+  font-family:'Inter','SF Pro Text',-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100%;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+  -webkit-user-select:none;
+  display:flex;flex-direction:column;
+  overflow-x:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;background:none;color:inherit}
+
+/* ====== TOP BAR ====== */
+.topbar{
+  background:var(--bg-2);
+  border-bottom:1px solid var(--hairline);
+  padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,var(--emerald),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:17px;color:#0a0e12;
+  box-shadow:0 4px 14px -4px var(--emerald);
+}
+.logo-text{display:flex;flex-direction:column;line-height:1.1}
+.logo-text .name{font-weight:800;font-size:15px;letter-spacing:-.01em}
+.logo-text .name .accent{color:var(--emerald)}
+.logo-text .tag{color:var(--dim);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{
+  width:36px;height:36px;border-radius:8px;
+  background:transparent;color:var(--ink-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;transition:all .15s;
+}
+.icon-btn:hover{background:var(--bg-3);color:var(--emerald)}
+.ticker{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg);border:1px solid var(--hairline);
+  padding:5px 10px;border-radius:999px;font-size:11px;
+}
+.ticker-symbol{color:var(--gold);font-weight:700;letter-spacing:.04em}
+.ticker-price{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.ticker-change{color:var(--emerald);font-weight:600;font-variant-numeric:tabular-nums}
+.ticker-change.down{color:var(--red)}
+
+/* ====== MODE TOGGLE ====== */
+.mode-bar{
+  display:flex;justify-content:center;gap:6px;
+  padding:12px 16px;
+  background:var(--bg);
+}
+.mode-btn{
+  padding:7px 16px;border-radius:999px;
+  background:transparent;border:1px solid var(--hairline);
+  color:var(--ink-2);font-size:12px;font-weight:600;
+  transition:all .15s;
+}
+.mode-btn.active{background:var(--emerald);color:#0a0e12;border-color:var(--emerald)}
+.mode-btn:hover:not(.active){color:var(--ink);border-color:var(--emerald)}
+
+/* ====== MAIN ====== */
+.app{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:0 12px 12px;max-width:500px;width:100%;margin:0 auto;
+}
+.mode-info{
+  text-align:center;margin-bottom:14px;
+  font-size:12px;color:var(--dim);
+  min-height:18px;letter-spacing:.02em;
+}
+.mode-info strong{color:var(--emerald);font-weight:700}
+
+/* ====== GRID ====== */
+.grid{
+  display:grid;grid-template-rows:repeat(6,1fr);
+  gap:5px;margin-bottom:18px;
+  width:100%;max-width:330px;
+}
+.grid-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.tile{
+  aspect-ratio:1/1;
+  border:2px solid var(--tile-border);
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:clamp(20px,5vw,28px);
+  text-transform:uppercase;
+  color:var(--ink);
+  background:var(--tile);
+  transition:all .3s;
+  position:relative;
+}
+.tile.filled{border-color:var(--ink-2)}
+.tile.typing{border-color:var(--emerald);background:rgba(16,217,160,0.05)}
+.tile.flip{transform-style:preserve-3d;animation:flip .5s ease forwards}
+@keyframes flip{
+  0%{transform:rotateX(0)}
+  50%{transform:rotateX(90deg)}
+  100%{transform:rotateX(0)}
+}
+.tile.correct{background:var(--green);border-color:var(--green);color:#0a0e12}
+.tile.present{background:var(--yellow);border-color:var(--yellow);color:#0a0e12}
+.tile.absent{background:var(--gray);border-color:var(--gray);color:var(--ink-2)}
+.tile.pop{animation:pop .1s ease}
+@keyframes pop{
+  0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}
+}
+
+/* ====== KEYBOARD ====== */
+.keyboard{
+  width:100%;max-width:500px;
+  display:flex;flex-direction:column;gap:6px;padding:0 4px 12px;
+}
+.kb-row{display:flex;gap:5px;justify-content:center}
+.kb-key{
+  flex:1;height:54px;
+  border-radius:6px;
+  background:var(--bg-3);
+  color:var(--ink);
+  font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  text-transform:uppercase;
+  transition:all .15s;
+  border:1px solid var(--hairline);
+  min-width:28px;
+  cursor:pointer;
+}
+.kb-key:hover{background:#252e3d}
+.kb-key.wide{flex:1.5;font-size:11px}
+.kb-key.extra-wide{flex:2;font-size:11px}
+.kb-key.correct{background:var(--green);color:#0a0e12;border-color:var(--green)}
+.kb-key.present{background:var(--yellow);color:#0a0e12;border-color:var(--yellow)}
+.kb-key.absent{background:var(--gray);color:var(--ink-2);border-color:var(--gray)}
+
+/* ====== MODAL ====== */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:300;display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);padding:20px;
+}
+.modal-bg.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg-2);
+  border:1px solid var(--hairline);
+  border-radius:16px;padding:20px;
+  max-width:400px;width:100%;
+  max-height:85vh;overflow-y:auto;
+  animation:slideUp .3s cubic-bezier(.2,.7,.3,1);
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:14px;letter-spacing:-.01em}
+.modal-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--hairline);
+  font-size:13px;
+}
+.modal-row:last-of-type{border-bottom:none}
+.modal-row .l{color:var(--dim)}
+.modal-row .v{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.modal-btn{
+  width:100%;padding:11px;border-radius:10px;
+  background:linear-gradient(120deg,var(--emerald),var(--gold));
+  color:#0a0e12;font-weight:800;font-size:13px;margin-top:10px;
+  letter-spacing:.02em;
+}
+.modal-btn:active{transform:scale(.97)}
+.modal-btn.secondary{background:transparent;border:1px solid var(--hairline);color:var(--ink)}
+.modal-btn.secondary:hover{border-color:var(--emerald);color:var(--emerald)}
+
+/* Stats: distribution chart */
+.dist-row{
+  display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;
+}
+.dist-label{width:14px;text-align:right;color:var(--dim);font-weight:600}
+.dist-bar-wrap{flex:1;height:18px;background:var(--bg-3);border-radius:3px;position:relative;overflow:hidden}
+.dist-bar{
+  height:100%;background:var(--emerald);border-radius:3px;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding:0 6px;font-size:11px;font-weight:700;color:#0a0e12;
+  font-variant-numeric:tabular-nums;
+  transition:width .5s ease;
+  min-width:24px;
+}
+.dist-bar.zero{background:var(--gray);color:var(--ink-2)}
+
+/* Toast */
+.toast-stack{
+  position:fixed;top:60px;left:0;right:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
+}
+.toast{
+  background:var(--bg-2);border:1px solid var(--hairline);border-radius:10px;
+  padding:10px 16px;font-size:12px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+  animation:toastIn .3s ease forwards;
+  max-width:90%;
+}
+.toast.gold{color:var(--gold);border-color:rgba(244,180,0,.4)}
+.toast.em{color:var(--emerald);border-color:rgba(16,217,160,.4)}
+.toast.red{color:var(--red);border-color:rgba(255,84,112,.4)}
+@keyframes toastIn{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast.leaving{animation:toastOut .3s ease forwards}
+@keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
+
+/* Win/Lose */
+.result-hero{
+  text-align:center;padding:20px 0 16px;
+  font-size:28px;font-weight:800;letter-spacing:-.01em;
+}
+.result-hero.win{color:var(--emerald)}
+.result-hero.lose{color:var(--red)}
+.result-word{
+  text-align:center;font-size:14px;color:var(--ink-2);margin-bottom:14px;
+  letter-spacing:.04em;
+}
+.result-word strong{color:var(--emerald);font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+
+/* Share */
+.share-area{
+  background:var(--bg-3);border:1px solid var(--hairline);
+  border-radius:8px;padding:10px;font-family:'SF Mono','Courier New',monospace;
+  font-size:12px;line-height:1.6;color:var(--ink-2);
+  white-space:pre-wrap;word-break:break-all;
+  margin:8px 0 14px;
+  max-height:140px;overflow-y:auto;
+}
+.share-area .sq{font-size:14px;letter-spacing:0}
+.share-area .gr{color:var(--green)}
+.share-area .yl{color:var(--yellow)}
+.share-area .gy{color:var(--gray)}
+
+footer{
+  text-align:center;padding:12px;color:var(--dim);
+  font-size:11px;letter-spacing:.04em;
+}
+@media(max-width:380px){
+  .kb-key{height:48px;font-size:12px;min-width:24px}
+  .kb-key.wide{font-size:10px}
+  .kb-key.extra-wide{font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">J</div>
+    <div class="logo-text">
+      <div class="name">JAY<span class="accent">DLE</span></div>
+      <div class="tag">The Crypto Word Game</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <div class="ticker">
+      <span class="ticker-symbol">JAY</span>
+      <span class="ticker-price" id="tickerPrice">$0.0024</span>
+      <span class="ticker-change" id="tickerChange">+0.0%</span>
+    </div>
+    <button class="icon-btn" id="muteBtn" aria-label="Mute sounds">🔊</button>
+    <button class="icon-btn" id="helpBtn" aria-label="How to play">?</button>
+    <button class="icon-btn" id="statsBtn" aria-label="Statistics">📊</button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
+  </div>
+</div>
+
+<div class="mode-bar">
+  <button class="mode-btn active" data-mode="daily">📅 Daily</button>
+  <button class="mode-btn" data-mode="practice">🎲 Practice</button>
+</div>
+
+<div class="app">
+  <div class="mode-info" id="modeInfo">JAYDLE #1 · Guess the crypto word in 6 tries</div>
+  <div class="grid" id="grid">
+    <!-- 6 rows × 5 tiles generated by JS -->
+  </div>
+  <div class="keyboard" id="keyboard">
+    <!-- generated by JS -->
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- HELP MODAL -->
+<div class="modal-bg" id="helpModal">
+  <div class="modal">
+    <h3>How to play JAYDLE</h3>
+    <p style="font-size:13px;color:var(--ink-2);line-height:1.6;margin-bottom:14px">
+      Guess the secret 5-letter crypto word in 6 tries. After each guess, the color of the tiles will change to show how close your guess was.
+    </p>
+    <div style="display:flex;gap:4px;margin-bottom:8px;justify-content:center">
+      <div class="tile filled" style="width:38px;height:38px;font-size:18px;border:2px solid var(--ink-2)">W</div>
+      <div class="tile filled" style="width:38px;height:38px;font-size:18px;border:2px solid var(--ink-2)">A</div>
+      <div class="tile filled" style="width:38px;height:38px;font-size:18px;border:2px solid var(--ink-2)">G</div>
+      <div class="tile filled" style="width:38px;height:38px;font-size:18px;border:2px solid var(--ink-2)">M</div>
+      <div class="tile filled" style="width:38px;height:38px;font-size:18px;border:2px solid var(--ink-2)">I</div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);text-align:center;margin-bottom:14px">The word <strong style="color:var(--ink)">WAGMI</strong> contains the letters <strong style="color:var(--ink)">W, A, G, M, I</strong>.</p>
+
+    <p style="font-size:12px;font-weight:700;margin-bottom:8px">Examples</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <div>
+        <div style="display:flex;gap:4px;margin-bottom:3px">
+          <div class="tile correct" style="width:32px;height:32px;font-size:14px">M</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">O</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">O</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">N</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">S</div>
+        </div>
+        <p style="font-size:11px;color:var(--ink-2)"><span style="color:var(--green);font-weight:700">M</span> is in the word and in the correct spot.</p>
+      </div>
+      <div>
+        <div style="display:flex;gap:4px;margin-bottom:3px">
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">P</div>
+          <div class="tile present" style="width:32px;height:32px;font-size:14px">R</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">I</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">C</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">E</div>
+        </div>
+        <p style="font-size:11px;color:var(--ink-2)"><span style="color:var(--yellow);font-weight:700">R</span> is in the word but in the wrong spot.</p>
+      </div>
+      <div>
+        <div style="display:flex;gap:4px;margin-bottom:3px">
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">B</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">E</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">A</div>
+          <div class="tile absent" style="width:32px;height:32px;font-size:14px">R</div>
+          <div class="tile filled" style="width:32px;height:32px;font-size:14px;border:2px solid var(--ink-2)">S</div>
+        </div>
+        <p style="font-size:11px;color:var(--ink-2)"><span style="color:var(--gray);font-weight:700">R</span> is not in the word in any spot.</p>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5">A new crypto word every day. Same word for everyone globally. Track your streak, share your wins, and learn crypto jargon while you play.</p>
+    <button class="modal-btn" id="closeHelp">Got it</button>
+  </div>
+</div>
+
+<!-- STATS MODAL -->
+<div class="modal-bg" id="statsModal">
+  <div class="modal">
+    <h3>📊 Your Stats</h3>
+    <div class="modal-row"><span class="l">Played</span><span class="v" id="statPlayed">0</span></div>
+    <div class="modal-row"><span class="l">Win %</span><span class="v" id="statWinPct">0</span></div>
+    <div class="modal-row"><span class="l">Current Streak</span><span class="v" id="statStreak">0</span></div>
+    <div class="modal-row"><span class="l">Max Streak</span><span class="v" id="statMaxStreak">0</span></div>
+    <p style="font-size:11px;color:var(--dim);margin-top:14px;margin-bottom:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase">Guess Distribution</p>
+    <div id="distContainer"></div>
+    <button class="modal-btn" id="closeStats">Close</button>
+  </div>
+</div>
+
+<!-- RESULT MODAL -->
+<div class="modal-bg" id="resultModal">
+  <div class="modal">
+    <div class="result-hero" id="resultHero">🎉</div>
+    <div class="result-word">The word was <strong id="resultWord">XXXXX</strong></div>
+    <div class="share-area" id="shareArea"></div>
+    <button class="modal-btn" id="shareBtn">📋 Copy Result</button>
+    <button class="modal-btn secondary" id="closeResult">Close</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h3>⚙ Settings</h3>
+    <div class="modal-row"><span class="l">Hard Mode</span><button class="toggle" id="toggleHard"></button></div>
+    <div class="modal-row"><span class="l">Color-blind Mode</span><button class="toggle" id="toggleCB"></button></div>
+    <p style="font-size:11px;color:var(--dim);margin-top:10px;line-height:1.5">Hard Mode: revealed hints must be used in subsequent guesses.</p>
+    <button class="modal-btn" id="closeSettings">Done</button>
+    <button class="modal-btn secondary" id="hardReset">⚠ Hard Reset Stats</button>
+  </div>
+</div>
+
+<footer>made with ⛏ by Elschwide · JAYDLE v1</footer>
+
+<script>
+(()=>{
+  'use strict';
+
+  // ============================================================
+  // AUDIO ENGINE (Web Audio API, procedural, no deps)
+  // ============================================================
+  let audioCtx = null;
+  let masterGain = null;
+  let soundEnabled = true;
+
+  function ensureAudio(){
+    if(audioCtx) return;
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.28;
+      masterGain.connect(audioCtx.destination);
+    }catch(e){
+      audioCtx = null;
+    }
+  }
+
+  function sfx(type){
+    if(!soundEnabled) return;
+    ensureAudio();
+    if(!audioCtx) return;
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    switch(type){
+      case 'letter': {
+        // Short tick — square wave 600Hz, 30ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'square';
+        o.frequency.value = 600;
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.05);
+        break;
+      }
+      case 'click': {
+        // Soft pop — triangle 500Hz, 50ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = 500;
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.06);
+        break;
+      }
+      case 'flip': {
+        // Tile flip — quick triangle 400Hz, 50ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(420, t);
+        o.frequency.exponentialRampToValueAtTime(320, t + 0.05);
+        g.gain.setValueAtTime(0.10, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.07);
+        break;
+      }
+      case 'correct': {
+        // Bright ding — sine 800Hz, 100ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(800, t);
+        g.gain.setValueAtTime(0.20, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.13);
+        break;
+      }
+      case 'present': {
+        // Softer ding — sine 600Hz, 100ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(600, t);
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.13);
+        break;
+      }
+      case 'absent': {
+        // Low thud — square 280Hz, 60ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'square';
+        o.frequency.setValueAtTime(280, t);
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.08);
+        break;
+      }
+      case 'invalid': {
+        // Buzz — sawtooth 200Hz, 150ms
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(200, t);
+        o.frequency.linearRampToValueAtTime(140, t + 0.15);
+        g.gain.setValueAtTime(0.20, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(g); g.connect(masterGain);
+        o.start(t); o.stop(t + 0.19);
+        break;
+      }
+      case 'win': {
+        // Victory arpeggio: C5 → E5 → G5 → C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          const start = t + i * 0.12;
+          g.gain.setValueAtTime(0, start);
+          g.gain.linearRampToValueAtTime(0.22, start + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, start + 0.30);
+          o.connect(g); g.connect(masterGain);
+          o.start(start); o.stop(start + 0.32);
+        });
+        // Add a final bright chord
+        const c2 = t + 0.48;
+        [1046.50, 1318.51, 1567.98].forEach(freq => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'triangle';
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0, c2);
+          g.gain.linearRampToValueAtTime(0.15, c2 + 0.04);
+          g.gain.exponentialRampToValueAtTime(0.001, c2 + 0.5);
+          o.connect(g); g.connect(masterGain);
+          o.start(c2); o.stop(c2 + 0.52);
+        });
+        break;
+      }
+      case 'lose': {
+        // Descending minor: C5 → A4 → F4 → D4
+        const notes = [523.25, 440.00, 349.23, 293.66];
+        notes.forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'triangle';
+          o.frequency.value = freq;
+          const start = t + i * 0.18;
+          g.gain.setValueAtTime(0.18, start);
+          g.gain.exponentialRampToValueAtTime(0.001, start + 0.32);
+          o.connect(g); g.connect(masterGain);
+          o.start(start); o.stop(start + 0.34);
+        });
+        break;
+      }
+      case 'newgame': {
+        // Bright chord blip
+        [800, 1000, 1200].forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0.12, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          o.connect(g); g.connect(masterGain);
+          o.start(t); o.stop(t + 0.27);
+        });
+        break;
+      }
+    }
+  }
+
+  // ============================================================
+  // WORD LIST (crypto jargon + theme-related)
+  // All words exactly 5 letters, no duplicates
+  // ============================================================
+  const WORDS = [
+    'WAGMI','MOONS','BULLS','BEARS','WHALE','ALPHA','BASED','STACK','STAKE','TOKEN',
+    'CHAIN','MINER','CHART','CARRY','VAULT','SLEEP','REACH','VALUE','PRICE','SPARK',
+    'SWIFT','GLORY','SHINE','DREAM','CLOUD','TRUST','SHIFT','TREND','DRIVE','SCALE',
+    'BLOOM','FORGE','GRIND','TRADE','HODLS','RUGUP','FUDDY','GAMMA','DEGEN','SQUID',
+  ];
+  const WORDS_UNIQ = [...new Set(WORDS)];
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const STORAGE_KEY = 'jaydleSave_v1';
+  const MAX_GUESSES = 6;
+  const WORD_LEN = 5;
+
+  let state = {
+    mode: 'daily',  // 'daily' | 'practice'
+    dailyNumber: 1, // current daily index
+    currentWord: '',
+    guesses: [],    // array of 5-letter strings, finalized
+    currentInput: '',
+    row: 0,
+    over: false,
+    won: false,
+    startedAt: null,
+    settings: { hardMode: false, colorBlind: false },
+    stats: {
+      played: 0, won: 0, currentStreak: 0, maxStreak: 0,
+      distribution: { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 },
+      lastDaily: null, // date string of last daily play
+    },
+  };
+
+  // ============================================================
+  // SAVE / LOAD
+  // ============================================================
+  function persistNow(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+  }
+  function loadSave(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        Object.assign(state, parsed);
+        // Ensure structure
+        if(!state.stats.distribution) state.stats.distribution = {1:0,2:0,3:0,4:0,5:0,6:0};
+      }
+    }catch(e){}
+  }
+
+  // ============================================================
+  // DAILY WORD SELECTION (deterministic by date)
+  // ============================================================
+  function dayKey(d = new Date()){
+    return d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate();
+  }
+  function dayIndex(d = new Date()){
+    // Days since 2026-01-01 (JAY Miner era)
+    const epoch = new Date('2026-01-01T00:00:00Z');
+    return Math.floor((d - epoch) / (1000*60*60*24));
+  }
+  function pickDailyWord(){
+    const idx = dayIndex() % WORDS_UNIQ.length;
+    return WORDS_UNIQ[idx];
+  }
+  function pickPracticeWord(){
+    // Pseudo-random but stable per session
+    const seed = Date.now() + (state.dailyNumber || 0);
+    return WORDS_UNIQ[seed % WORDS_UNIQ.length];
+  }
+  function isValidWord(w){
+    return WORDS_UNIQ.includes(w);
+  }
+
+  // ============================================================
+  // TICKER (decorative)
+  // ============================================================
+  let tickerPrice = 0.0024;
+  function tickTicker(){
+    const change = (Math.random() - 0.5) * 0.00006;
+    tickerPrice = Math.max(0.0001, tickerPrice + change);
+    const pct = (change / tickerPrice) * 100;
+    $('tickerPrice').textContent = '$' + tickerPrice.toFixed(4);
+    const chEl = $('tickerChange');
+    chEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    chEl.classList.toggle('down', pct < 0);
+  }
+
+  // ============================================================
+  // UI HELPERS
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  function showToast(msg, kind=''){
+    const t = document.createElement('div');
+    t.className = 'toast ' + kind;
+    t.textContent = msg;
+    $('toastStack').appendChild(t);
+    setTimeout(() => { t.classList.add('leaving'); setTimeout(() => t.remove(), 300); }, 2500);
+  }
+
+  // ============================================================
+  // GRID
+  // ============================================================
+  function buildGrid(){
+    const grid = $('grid');
+    grid.innerHTML = '';
+    for(let r = 0; r < MAX_GUESSES; r++){
+      const row = document.createElement('div');
+      row.className = 'grid-row';
+      for(let c = 0; c < WORD_LEN; c++){
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.id = `t-${r}-${c}`;
+        row.appendChild(tile);
+      }
+      grid.appendChild(row);
+    }
+  }
+  function updateTiles(){
+    for(let r = 0; r < MAX_GUESSES; r++){
+      for(let c = 0; c < WORD_LEN; c++){
+        const tile = $(`t-${r}-${c}`);
+        const guess = state.guesses[r] || (r === state.row ? state.currentInput : '');
+        const ch = guess[c] || '';
+        tile.textContent = ch;
+        // For revealed rows (r < state.row or game over), keep the color class
+        const isRevealed = r < state.row || (state.over && state.guesses[r]);
+        if(isRevealed){
+          // Keep current color classes, just update text
+          continue;
+        }
+        tile.classList.remove('filled','typing','correct','present','absent');
+        if(!ch) continue;
+        if(r === state.row){
+          tile.classList.add('filled', 'typing');
+        } else {
+          tile.classList.add('filled');
+        }
+      }
+    }
+  }
+  function applyReveal(guess, row){
+    // Returns array of states: 'correct' | 'present' | 'absent'
+    const result = ['absent','absent','absent','absent','absent'];
+    const target = state.currentWord;
+    const targetArr = target.split('');
+    const used = [false,false,false,false,false];
+    // First pass: correct
+    for(let i = 0; i < WORD_LEN; i++){
+      if(guess[i] === targetArr[i]){
+        result[i] = 'correct';
+        used[i] = true;
+      }
+    }
+    // Second pass: present (handle duplicates correctly)
+    for(let i = 0; i < WORD_LEN; i++){
+      if(result[i] === 'correct') continue;
+      for(let j = 0; j < WORD_LEN; j++){
+        if(used[j]) continue;
+        if(guess[i] === targetArr[j]){
+          result[i] = 'present';
+          used[j] = true;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+  async function revealRow(row){
+    const guess = state.guesses[row];
+    const result = applyReveal(guess, row);
+    for(let c = 0; c < WORD_LEN; c++){
+      const tile = $(`t-${row}-${c}`);
+      tile.classList.remove('typing');
+      tile.classList.add('flip');
+      sfx('flip');
+      await sleep(150);
+      tile.classList.remove('filled');
+      tile.classList.add(result[c]);
+      // Color-coded sfx
+      if(result[c] === 'correct') sfx('correct');
+      else if(result[c] === 'present') sfx('present');
+      else sfx('absent');
+      await sleep(100);
+    }
+    // Update keyboard
+    for(let c = 0; c < WORD_LEN; c++){
+      const k = $(`k-${guess[c]}`);
+      if(!k) continue;
+      // Priority: correct > present > absent
+      if(result[c] === 'correct'){
+        k.classList.remove('present','absent');
+        k.classList.add('correct');
+      } else if(result[c] === 'present' && !k.classList.contains('correct')){
+        k.classList.remove('absent');
+        k.classList.add('present');
+      } else if(!k.classList.contains('correct') && !k.classList.contains('present')){
+        k.classList.add('absent');
+      }
+    }
+  }
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  // ============================================================
+  // KEYBOARD
+  // ============================================================
+  function buildKeyboard(){
+    const kb = $('keyboard');
+    kb.innerHTML = '';
+    const rows = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['ENTER','Z','X','C','V','B','N','M','BACK'],
+    ];
+    rows.forEach((row, ri) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'kb-row';
+      row.forEach(k => {
+        const btn = document.createElement('button');
+        btn.className = 'kb-key';
+        if(k === 'ENTER' || k === 'BACK'){
+          btn.classList.add('extra-wide');
+          btn.textContent = k === 'ENTER' ? '↵' : '⌫';
+          btn.dataset.key = k;
+        } else {
+          btn.textContent = k;
+          btn.dataset.key = k;
+        }
+        btn.id = `k-${k}`;
+        btn.addEventListener('click', () => onKey(k));
+        rowEl.appendChild(btn);
+      });
+      kb.appendChild(rowEl);
+    });
+  }
+
+  // ============================================================
+  // INPUT
+  // ============================================================
+  function onKey(k){
+    if(state.over) return;
+    if(k === 'ENTER'){
+      sfx('click');
+      submitGuess();
+    } else if(k === 'BACK'){
+      if(state.currentInput.length > 0){
+        state.currentInput = state.currentInput.slice(0, -1);
+        updateTiles();
+        sfx('letter');
+      }
+    } else {
+      if(state.currentInput.length < WORD_LEN){
+        state.currentInput += k;
+        updateTiles();
+        sfx('letter');
+        const c = state.currentInput.length - 1;
+        const tile = $(`t-${state.row}-${c}`);
+        tile.classList.add('pop');
+        setTimeout(() => tile.classList.remove('pop'), 100);
+      }
+    }
+  }
+  async function submitGuess(){
+    if(state.currentInput.length !== WORD_LEN){
+      showToast('Need 5 letters', 'red');
+      sfx('invalid');
+      return;
+    }
+    const word = state.currentInput;
+    if(!isValidWord(word)){
+      showToast('Not in word list', 'red');
+      sfx('invalid');
+      for(let c = 0; c < WORD_LEN; c++){
+        const tile = $(`t-${state.row}-${c}`);
+        tile.style.animation = 'none';
+        setTimeout(() => tile.style.animation = '', 10);
+      }
+      return;
+    }
+    if(state.settings.hardMode && state.row > 0){
+      const prevGuess = state.guesses[state.row - 1];
+      const prevResult = applyReveal(prevGuess, state.row - 1);
+      for(let c = 0; c < WORD_LEN; c++){
+        if(prevResult[c] === 'correct' && prevGuess[c] !== word[c]){
+          showToast('Hard mode: must use green letters', 'red');
+          sfx('invalid');
+          return;
+        }
+      }
+      const yellowSet = new Set();
+      for(let c = 0; c < WORD_LEN; c++){
+        if(prevResult[c] === 'present') yellowSet.add(prevGuess[c]);
+      }
+      for(const ch of yellowSet){
+        if(!word.includes(ch)){
+          showToast('Hard mode: must use yellow letters', 'red');
+          sfx('invalid');
+          return;
+        }
+      }
+    }
+    state.guesses.push(word);
+    state.currentInput = '';
+    await revealRow(state.row);
+    if(word === state.currentWord){
+      state.over = true;
+      state.won = true;
+      sfx('win');
+      setTimeout(() => onGameOver(true), 800);
+      return;
+    }
+    state.row++;
+    if(state.row >= MAX_GUESSES){
+      state.over = true;
+      sfx('lose');
+      setTimeout(() => onGameOver(false), 600);
+      return;
+    }
+    updateTiles();
+    persistNow();
+  }
+
+  // ============================================================
+  // GAME OVER
+  // ============================================================
+  function onGameOver(won){
+    if(state.mode === 'daily' && state.stats.lastDaily !== dayKey()){
+      state.stats.lastDaily = dayKey();
+      state.stats.played++;
+      if(won){
+        state.stats.won++;
+        state.stats.currentStreak++;
+        if(state.stats.currentStreak > state.stats.maxStreak){
+          state.stats.maxStreak = state.stats.currentStreak;
+        }
+        state.stats.distribution[state.guesses.length] = (state.stats.distribution[state.guesses.length] || 0) + 1;
+      } else {
+        state.stats.currentStreak = 0;
+      }
+    } else if(state.mode === 'practice'){
+      state.stats.played++;
+      if(won){
+        state.stats.won++;
+        state.stats.distribution[state.guesses.length] = (state.stats.distribution[state.guesses.length] || 0) + 1;
+      }
+    }
+    persistNow();
+    showResult(won);
+  }
+  function showResult(won){
+    $('resultHero').textContent = won ? (state.guesses.length === 1 ? '🤯 Hole in One!' : state.guesses.length === 2 ? '🎯 Genius' : '🎉 You got it!') : '💀 Game Over';
+    $('resultHero').className = 'result-hero ' + (won ? 'win' : 'lose');
+    $('resultWord').textContent = state.currentWord;
+    // Build share text
+    const shareText = buildShareText(won);
+    $('shareArea').innerHTML = shareText.html;
+    $('shareBtn').onclick = () => {
+      navigator.clipboard.writeText(shareText.text).then(() => {
+        showToast('Copied to clipboard!', 'em');
+      }).catch(() => {
+        showToast('Copy failed', 'red');
+      });
+    };
+    $('resultModal').classList.add('show');
+  }
+  function buildShareText(won){
+    const date = state.mode === 'daily' ? 'Daily' : 'Practice';
+    const num = state.mode === 'daily' ? '#' + (dayIndex() + 1) : '#PR-' + state.dailyNumber;
+    let text = `JAYDLE ${num} ${won ? state.guesses.length : 'X'}/6\n\n`;
+    let html = `<div style="text-align:center;margin-bottom:6px;color:var(--emerald);font-weight:700">JAYDLE ${num} ${won ? state.guesses.length : 'X'}/6</div>`;
+    for(let r = 0; r < MAX_GUESSES; r++){
+      if(!state.guesses[r]) break;
+      const result = applyReveal(state.guesses[r], r);
+      let line = '';
+      let htmlLine = '';
+      for(let c = 0; c < WORD_LEN; c++){
+        const s = result[c];
+        const sq = s === 'correct' ? '🟩' : s === 'present' ? '🟨' : '⬛';
+        line += sq;
+        const cls = s === 'correct' ? 'gr' : s === 'present' ? 'yl' : 'gy';
+        htmlLine += `<span class="sq ${cls}">${sq}</span>`;
+      }
+      text += line + '\n';
+      html += `<div>${htmlLine}</div>`;
+    }
+    text += '\nhttps://games.thejaynetwork.com/';
+    return { text, html };
+  }
+
+  // ============================================================
+  // NEW GAME
+  // ============================================================
+  function newGame(mode){
+    state.mode = mode;
+    state.dailyNumber = (state.dailyNumber || 0) + (mode === 'practice' ? 1 : 0);
+    state.guesses = [];
+    state.currentInput = '';
+    state.row = 0;
+    state.over = false;
+    state.won = false;
+    state.startedAt = Date.now();
+    state.currentWord = mode === 'daily' ? pickDailyWord() : pickPracticeWord();
+    sfx('newgame');
+    // Reset keyboard colors
+    document.querySelectorAll('.kb-key').forEach(k => {
+      k.classList.remove('correct','present','absent');
+    });
+    updateTiles();
+    updateModeInfo();
+    persistNow();
+  }
+  function updateModeInfo(){
+    if(state.mode === 'daily'){
+      $('modeInfo').innerHTML = `JAYDLE #${dayIndex() + 1} · Guess the crypto word in 6 tries`;
+    } else {
+      $('modeInfo').innerHTML = `<strong>Practice mode</strong> · random word, plays don't count for streak`;
+    }
+  }
+
+  // ============================================================
+  // STATS
+  // ============================================================
+  function showStats(){
+    $('statPlayed').textContent = state.stats.played;
+    const wp = state.stats.played > 0 ? Math.round((state.stats.won / state.stats.played) * 100) : 0;
+    $('statWinPct').textContent = wp + '%';
+    $('statStreak').textContent = state.stats.currentStreak;
+    $('statMaxStreak').textContent = state.stats.maxStreak;
+    // Distribution
+    const maxCount = Math.max(1, ...Object.values(state.stats.distribution));
+    const distC = $('distContainer');
+    distC.innerHTML = '';
+    for(let i = 1; i <= MAX_GUESSES; i++){
+      const count = state.stats.distribution[i] || 0;
+      const pct = (count / maxCount) * 100;
+      const row = document.createElement('div');
+      row.className = 'dist-row';
+      row.innerHTML = `
+        <div class="dist-label">${i}</div>
+        <div class="dist-bar-wrap">
+          <div class="dist-bar ${count === 0 ? 'zero' : ''}" style="width: ${Math.max(8, pct)}%">${count}</div>
+        </div>
+      `;
+      distC.appendChild(row);
+    }
+    $('statsModal').classList.add('show');
+  }
+
+  // ============================================================
+  // EVENT BINDINGS
+  // ============================================================
+  document.addEventListener('keydown', e => {
+    if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+    const k = e.key.toUpperCase();
+    if(k === 'ENTER'){ onKey('ENTER'); e.preventDefault(); return; }
+    if(k === 'BACKSPACE'){ onKey('BACK'); e.preventDefault(); return; }
+    if(/^[A-Z]$/.test(k)){ onKey(k); }
+  });
+
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.classList.contains('active')) return;
+      // Don't switch mid-game without confirming? Let's just allow
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      newGame(btn.dataset.mode);
+    });
+  });
+
+  $('helpBtn').addEventListener('click', () => { sfx('click'); $('helpModal').classList.add('show'); });
+  $('closeHelp').addEventListener('click', () => { sfx('click'); $('helpModal').classList.remove('show'); });
+
+  $('statsBtn').addEventListener('click', () => { sfx('click'); showStats(); });
+  $('closeStats').addEventListener('click', () => { sfx('click'); $('statsModal').classList.remove('show'); });
+
+  $('muteBtn').addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    $('muteBtn').textContent = soundEnabled ? '🔊' : '🔇';
+    if(soundEnabled) sfx('click');
+  });
+
+  $('settingsBtn').addEventListener('click', () => {
+    $('toggleHard').classList.toggle('on', state.settings.hardMode);
+    $('toggleCB').classList.toggle('on', state.settings.colorBlind);
+    $('settingsModal').classList.add('show');
+  });
+  $('closeSettings').addEventListener('click', () => $('settingsModal').classList.remove('show'));
+  $('toggleHard').addEventListener('click', e => {
+    state.settings.hardMode = !state.settings.hardMode;
+    e.currentTarget.classList.toggle('on', state.settings.hardMode);
+    persistNow();
+  });
+  $('toggleCB').addEventListener('click', e => {
+    state.settings.colorBlind = !state.settings.colorBlind;
+    e.currentTarget.classList.toggle('on', state.settings.colorBlind);
+    document.body.classList.toggle('cb-mode', state.settings.colorBlind);
+    persistNow();
+  });
+  $('hardReset').addEventListener('click', () => {
+    if(confirm('Delete all stats and reset?')){
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  });
+
+  $('closeResult').addEventListener('click', () => $('resultModal').classList.remove('show'));
+
+  // ============================================================
+  // BOOT
+  // ============================================================
+  loadSave();
+  buildGrid();
+  buildKeyboard();
+  newGame(state.mode);
+  updateTiles();
+  setInterval(tickTicker, 1500);
+  tickTicker();
+
+  // Daily: if already played today, show result on load
+  if(state.mode === 'daily' && state.stats.lastDaily === dayKey() && state.over){
+    // Already played — show result modal after brief delay
+    setTimeout(() => showResult(state.won), 800);
+  }
+})();
+</script>
+
+</body>
+</html>
